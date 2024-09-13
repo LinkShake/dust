@@ -1,27 +1,70 @@
 import {
   enumType,
   inputObjectType,
+  intArg,
   //   intArg,
   mutationField,
+  nonNull,
   objectType,
+  queryField,
+  stringArg,
 } from "nexus";
 import { Book, Edition, Tag } from "nexus-prisma";
 import { Context } from "../types/Context";
+// import { PositionType } from "./Position";
 
 export const BookType = objectType({
   name: Book.$name,
   definition(t) {
-    t.field(Book.id),
-      t.field("title", { type: Book.title.type }),
-      t.field("author", { type: Book.author.type }),
-      t.field("ISBN", {
-        type: "Int",
-      }),
-      t.field("buyLink", { type: Book.buyLink.type }),
-      t.field("description", { type: Book.description.type }),
-      t.field("edition", { type: Book.edition.type }),
-      t.field("gifted", { type: Book.gifted.type }),
-      t.field("lang", { type: Book.lang.type });
+    t.field(Book.id), t.field("title", { type: Book.title.type });
+    t.field("author", { type: Book.author.type });
+    t.field("ISBN", {
+      type: "Int",
+    });
+    t.field("buyLink", { type: Book.buyLink.type });
+    t.field("description", { type: Book.description.type });
+    t.field("edition", { type: Book.edition.type });
+    t.field("gifted", { type: Book.gifted.type });
+    t.field("lang", { type: Book.lang.type });
+    t.field("position", { type: Book.position.type });
+    t.field("read", {
+      type: "Boolean",
+      resolve: async (parent, _, ctx: Context) => {
+        const data = await ctx.prisma.book.findUnique({
+          where: {
+            id: parent.id,
+          },
+          include: {
+            read: {
+              where: {
+                userId: "d5001053-43fd-4ace-a0c7-2c790734d08f",
+              },
+            },
+          },
+        });
+
+        return data?.read.length ? data.read[0].read : false;
+      },
+    });
+    t.field("rating", {
+      type: "Float",
+      resolve: async (parent, _, ctx: Context) => {
+        const data = await ctx.prisma.book.findUnique({
+          where: {
+            id: parent.id,
+          },
+          include: {
+            rating: {
+              where: {
+                userId: "d5001053-43fd-4ace-a0c7-2c790734d08f",
+              },
+            },
+          },
+        });
+
+        return data?.rating.length ? data.rating[0].rating : 0.0;
+      },
+    });
   },
 });
 
@@ -49,7 +92,7 @@ export const BookInputType = inputObjectType({
     });
     t.float("rating");
     t.int("row");
-    // t.field("position", { type: Book.position.type });
+    // t.field("position", { type: Position.$name });
     t.string("lang");
     t.boolean("read");
     t.field("edition", {
@@ -61,7 +104,7 @@ export const BookInputType = inputObjectType({
   },
 });
 
-export const BookMutation = mutationField("insertBook", {
+export const insertBookMutationField = mutationField("insertBook", {
   type: "Boolean",
   args: { data: BookInputType },
   async resolve(_, args, ctx: Context) {
@@ -93,4 +136,38 @@ export const BookMutation = mutationField("insertBook", {
       return false;
     }
   },
+});
+
+export const booksQueryField = queryField((t) => {
+  t.nonNull.list.nonNull.field("books", {
+    type: Book.$name,
+    args: {
+      libraryId: nonNull(stringArg()),
+    },
+    async resolve(_, { libraryId }, ctx: Context) {
+      return await ctx.prisma.book.findMany({
+        where: {
+          libraryId,
+        },
+      });
+    },
+  });
+});
+
+export const bookByIdQueryField = queryField((t) => {
+  t.nonNull.field("book", {
+    type: Book.$name,
+    args: {
+      libraryId: nonNull(stringArg()),
+      id: nonNull(intArg()),
+    },
+    async resolve(_, { libraryId, id }, ctx: Context) {
+      return await ctx.prisma.book.findUnique({
+        where: {
+          libraryId,
+          id,
+        },
+      });
+    },
+  });
 });

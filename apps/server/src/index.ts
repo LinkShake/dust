@@ -5,15 +5,31 @@ import cors from "cors";
 import { prisma } from "../prisma/db";
 import DataLoader from "dataloader";
 import { makeSchema } from "nexus";
-import { LibraryType } from "./graphql/Library";
-import { BookMutation, BookType, EditionEnum } from "./graphql/Book";
-import { Query } from "./graphql/Query";
+import { librariesQueryField, LibraryType } from "./graphql/Library";
+import {
+  insertBookMutationField,
+  BookType,
+  EditionEnum,
+  booksQueryField,
+  bookByIdQueryField,
+} from "./graphql/Book";
+import { LibraryPositionType, PositionType } from "./graphql/Position";
 
 const main = async () => {
   const app = express();
 
   const schema = makeSchema({
-    types: [LibraryType, BookType, BookMutation, Query, EditionEnum],
+    types: [
+      LibraryType,
+      librariesQueryField,
+      BookType,
+      booksQueryField,
+      bookByIdQueryField,
+      insertBookMutationField,
+      PositionType,
+      LibraryPositionType,
+      EditionEnum,
+    ],
     outputs: { schema: true },
   });
 

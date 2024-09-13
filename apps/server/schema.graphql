@@ -11,6 +11,9 @@ type Book {
   gifted: Boolean
   id: Int!
   lang: String!
+  position: Position
+  rating: Float
+  read: Boolean
   title: String!
 }
 
@@ -45,8 +48,18 @@ type Library {
   sharesId: [String!]!
 }
 
+type LibraryPosition {
+  libraryName: String!
+  libraryNumber: Int!
+}
+
 type Mutation {
   insertBook(data: BookInputType): Boolean
+}
+
+type Position {
+  libraryPosition: LibraryPosition
+  shelf: Int!
 }
 
 type Query {

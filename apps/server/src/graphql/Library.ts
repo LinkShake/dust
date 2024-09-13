@@ -1,4 +1,4 @@
-import { objectType } from "nexus";
+import { objectType, queryField } from "nexus";
 import { Library } from "nexus-prisma";
 import { Context } from "../types/Context";
 
@@ -20,4 +20,15 @@ export const LibraryType = objectType({
       },
     });
   },
+});
+
+export const librariesQueryField = queryField((t) => {
+  t.nonNull.list.nonNull.field("libraries", {
+    type: Library.$name,
+    async resolve(_, __, ctx: Context) {
+      const data = await ctx.prisma.library.findMany();
+      console.log(data);
+      return data;
+    },
+  });
 });
