@@ -71,6 +71,7 @@ model Book {
   title       String
   author      String          @default("")
   publisher   String          @default("")
+  thumbnail   String?
   pages       Int?
   ISBN        BigInt?
   description String          @default("")
