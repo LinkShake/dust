@@ -1,6 +1,14 @@
-import { objectType, queryField } from "nexus";
+import {
+  list,
+  mutationField,
+  nonNull,
+  objectType,
+  queryField,
+  stringArg,
+} from "nexus";
 import { Library } from "nexus-prisma";
 import { Context } from "../types/Context";
+import { GraphQLError } from "graphql";
 
 export const LibraryType = objectType({
   name: Library.$name,
@@ -29,4 +37,88 @@ export const librariesQueryField = queryField((t) => {
       return await ctx.prisma.library.findMany();
     },
   });
+});
+
+export const createLibraryMutationField = mutationField("createLibrary", {
+  type: "Boolean",
+  args: { libName: nonNull(stringArg()) },
+  async resolve(_, { libName }, ctx: Context) {
+    try {
+      await ctx.prisma.library.create({
+        data: {
+          name: libName,
+          ownerId: ctx.user?.userId!,
+          shared: false,
+          sharesId: [],
+          books: { create: [] },
+        },
+      });
+
+      return true;
+    } catch (err) {
+      return false;
+    }
+  },
+});
+
+export const shareLibraryMutationField = mutationField("shareLibrary", {
+  type: "Boolean",
+  args: { usersId: nonNull(list(stringArg())), libId: nonNull(stringArg()) },
+  async resolve(_, { usersId, libId }, ctx: Context) {
+    try {
+      await ctx.prisma.library.update({
+        where: {
+          id: libId,
+        },
+        data: {
+          shared: true,
+          sharesId: {
+            push: usersId,
+          },
+        },
+      });
+
+      return true;
+    } catch (err) {
+      return false;
+    }
+  },
+});
+
+export const deleteLibraryMutationField = mutationField("deleteLibrary", {
+  type: "Boolean",
+  args: { libId: nonNull(stringArg()) },
+  async resolve(_, { libId }, ctx: Context) {
+    const library = await ctx.prisma.library.findUnique({
+      where: {
+        id: libId,
+      },
+    });
+
+    if (ctx.user?.userId !== library?.ownerId) {
+      throw new GraphQLError("Permission denied", {
+        extensions: {
+          code: "UNAUTHORIZED",
+        },
+      });
+    }
+
+    try {
+      await ctx.prisma.book.deleteMany({
+        where: {
+          libraryId: libId,
+        },
+      });
+
+      await ctx.prisma.library.delete({
+        where: {
+          id: libId,
+        },
+      });
+
+      return true;
+    } catch (err) {
+      return false;
+    }
+  },
 });

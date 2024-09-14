@@ -4,14 +4,24 @@ import { expressMiddleware } from "@apollo/server/express4";
 import cors from "cors";
 import { prisma } from "../prisma/db";
 import DataLoader from "dataloader";
-import { fieldAuthorizePlugin, makeSchema } from "nexus";
-import { librariesQueryField, LibraryType } from "./graphql/Library";
+import { makeSchema } from "nexus";
+import {
+  createLibraryMutationField,
+  deleteLibraryMutationField,
+  librariesQueryField,
+  LibraryType,
+  shareLibraryMutationField,
+} from "./graphql/Library";
 import {
   insertBookMutationField,
   BookType,
   EditionEnum,
   booksQueryField,
   bookByIdQueryField,
+  insertBookByIsbnMutationField,
+  deleteBookMutationField,
+  updateBookRatingMutationField,
+  updateBookReadStatusMutationField,
 } from "./graphql/Book";
 import { LibraryPositionType, PositionType } from "./graphql/Position";
 import { createClient } from "redis";
@@ -30,16 +40,22 @@ const main = async () => {
     types: [
       LibraryType,
       librariesQueryField,
+      createLibraryMutationField,
+      shareLibraryMutationField,
+      deleteLibraryMutationField,
       BookType,
       booksQueryField,
       bookByIdQueryField,
       insertBookMutationField,
+      insertBookByIsbnMutationField,
+      deleteBookMutationField,
+      updateBookRatingMutationField,
+      updateBookReadStatusMutationField,
       PositionType,
       LibraryPositionType,
       EditionEnum,
     ],
     outputs: { schema: true },
-    plugins: [fieldAuthorizePlugin()],
   });
 
   const server = new ApolloServer({ schema });
