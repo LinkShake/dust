@@ -88,7 +88,7 @@ export const BookInputType = inputObjectType({
     t.string("description");
     t.string("publisher");
     t.int("pages");
-    t.field("tags", {
+    t.list.field("tags", {
       type: TagEnum,
     });
     t.float("rating");
@@ -96,7 +96,7 @@ export const BookInputType = inputObjectType({
     // t.field("position", { type: Position.$name });
     t.string("lang");
     t.boolean("read");
-    t.field("edition", {
+    t.list.field("edition", {
       type: EditionEnum,
     });
     t.float("price");
@@ -140,36 +140,29 @@ export const bookByIdQueryField = queryField((t) => {
 });
 
 export const insertBookMutationField = mutationField("insertBook", {
-  type: "Boolean",
+  type: Book.$name,
   args: { data: BookInputType },
-  async resolve(_, args, ctx: Context) {
-    try {
-      const { data: input } = args;
-      await ctx.prisma.book.create({
-        data: {
-          ...input,
-          edition: {
-            set: Array.isArray(input.edition) ? input.edition : [input.edition],
-          },
-          rating: {
-            create: {
-              userId: ctx.user?.userId,
-              rating: input.rating,
-            },
-          },
-          read: {
-            create: {
-              userId: ctx.user?.userId,
-              read: input.read,
-            },
+  async resolve(_, { data: input }, ctx: Context) {
+    return await ctx.prisma.book.create({
+      data: {
+        ...input,
+        edition: {
+          set: Array.isArray(input.edition) ? input.edition : [input.edition],
+        },
+        rating: {
+          create: {
+            userId: ctx.user?.userId,
+            rating: input.rating,
           },
         },
-      });
-
-      return true;
-    } catch (err) {
-      return false;
-    }
+        read: {
+          create: {
+            userId: ctx.user?.userId,
+            read: input.read,
+          },
+        },
+      },
+    });
   },
 });
 
@@ -188,54 +181,46 @@ export const deleteBookMutationField = mutationField("deleteBook", {
   type: "Boolean",
   args: { bookId: nonNull(intArg()), libId: nonNull(stringArg()) },
   async resolve(_, { bookId, libId }, ctx: Context) {
-    try {
-      await ctx.prisma.book.delete({
-        where: {
-          id: bookId,
-          libraryId: libId,
-        },
-      });
+    await ctx.prisma.book.delete({
+      where: {
+        id: bookId,
+        libraryId: libId,
+      },
+    });
 
-      return true;
-    } catch (err) {
-      return false;
-    }
+    return true;
   },
 });
 
 export const updateBookRatingMutationField = mutationField("updateBookRating", {
-  type: "Boolean",
+  type: "Float",
   args: {
     bookId: nonNull(intArg()),
     libId: nonNull(stringArg()),
     newRating: nonNull(floatArg()),
   },
   async resolve(_, { bookId, libId, newRating }, ctx: Context) {
-    try {
-      await ctx.prisma.book.update({
-        where: {
-          id: bookId,
-          libraryId: libId,
-        },
-        data: {
-          rating: {
-            update: {
-              where: {
-                userId: ctx.user?.userId!,
-                userId_bookId: { userId: ctx.user?.userId!, bookId },
-              },
-              data: {
-                rating: newRating,
-              },
+    await ctx.prisma.book.update({
+      where: {
+        id: bookId,
+        libraryId: libId,
+      },
+      data: {
+        rating: {
+          update: {
+            where: {
+              userId: ctx.user?.userId!,
+              userId_bookId: { userId: ctx.user?.userId!, bookId },
+            },
+            data: {
+              rating: newRating,
             },
           },
         },
-      });
+      },
+    });
 
-      return true;
-    } catch (err) {
-      return false;
-    }
+    return newRating;
   },
 });
 
@@ -249,31 +234,27 @@ export const updateBookReadStatusMutationField = mutationField(
       readStatus: nonNull(booleanArg()),
     },
     async resolve(_, { bookId, libId, readStatus }, ctx: Context) {
-      try {
-        await ctx.prisma.book.update({
-          where: {
-            id: bookId,
-            libraryId: libId,
-          },
-          data: {
-            read: {
-              update: {
-                where: {
-                  userId: ctx.user?.userId!,
-                  userId_bookId: { userId: ctx.user?.userId!, bookId },
-                },
-                data: {
-                  read: readStatus,
-                },
+      await ctx.prisma.book.update({
+        where: {
+          id: bookId,
+          libraryId: libId,
+        },
+        data: {
+          read: {
+            update: {
+              where: {
+                userId: ctx.user?.userId!,
+                userId_bookId: { userId: ctx.user?.userId!, bookId },
+              },
+              data: {
+                read: readStatus,
               },
             },
           },
-        });
+        },
+      });
 
-        return readStatus;
-      } catch (err) {
-        return false;
-      }
+      return readStatus;
     },
   }
 );

@@ -40,24 +40,18 @@ export const librariesQueryField = queryField((t) => {
 });
 
 export const createLibraryMutationField = mutationField("createLibrary", {
-  type: "Boolean",
+  type: Library.$name,
   args: { libName: nonNull(stringArg()) },
   async resolve(_, { libName }, ctx: Context) {
-    try {
-      await ctx.prisma.library.create({
-        data: {
-          name: libName,
-          ownerId: ctx.user?.userId!,
-          shared: false,
-          sharesId: [],
-          books: { create: [] },
-        },
-      });
-
-      return true;
-    } catch (err) {
-      return false;
-    }
+    return await ctx.prisma.library.create({
+      data: {
+        name: libName,
+        ownerId: ctx.user?.userId!,
+        shared: false,
+        sharesId: [],
+        books: { create: [] },
+      },
+    });
   },
 });
 
@@ -65,23 +59,19 @@ export const shareLibraryMutationField = mutationField("shareLibrary", {
   type: "Boolean",
   args: { usersId: nonNull(list(stringArg())), libId: nonNull(stringArg()) },
   async resolve(_, { usersId, libId }, ctx: Context) {
-    try {
-      await ctx.prisma.library.update({
-        where: {
-          id: libId,
+    await ctx.prisma.library.update({
+      where: {
+        id: libId,
+      },
+      data: {
+        shared: true,
+        sharesId: {
+          push: usersId,
         },
-        data: {
-          shared: true,
-          sharesId: {
-            push: usersId,
-          },
-        },
-      });
+      },
+    });
 
-      return true;
-    } catch (err) {
-      return false;
-    }
+    return true;
   },
 });
 
@@ -103,22 +93,18 @@ export const deleteLibraryMutationField = mutationField("deleteLibrary", {
       });
     }
 
-    try {
-      await ctx.prisma.book.deleteMany({
-        where: {
-          libraryId: libId,
-        },
-      });
+    await ctx.prisma.book.deleteMany({
+      where: {
+        libraryId: libId,
+      },
+    });
 
-      await ctx.prisma.library.delete({
-        where: {
-          id: libId,
-        },
-      });
+    await ctx.prisma.library.delete({
+      where: {
+        id: libId,
+      },
+    });
 
-      return true;
-    } catch (err) {
-      return false;
-    }
+    return true;
   },
 });

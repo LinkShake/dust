@@ -21,7 +21,7 @@ input BookInputType {
   author: String!
   buyLink: String
   description: String
-  edition: Edition
+  edition: [Edition]
   gifted: Boolean
   lang: String
   libraryId: String!
@@ -31,7 +31,7 @@ input BookInputType {
   rating: Float
   read: Boolean
   row: Int
-  tags: Tag
+  tags: [Tag]
   title: String!
 }
 
@@ -54,13 +54,13 @@ type LibraryPosition {
 }
 
 type Mutation {
-  createLibrary(libName: String!): Boolean
+  createLibrary(libName: String!): Library
   deleteBook(bookId: Int!, libId: String!): Boolean
   deleteLibrary(libId: String!): Boolean
-  insertBook(data: BookInputType): Boolean
+  insertBook(data: BookInputType): Book
   insertBookByIsbn(isbn: String!): Boolean
   shareLibrary(libId: String!, usersId: [String]!): Boolean
-  updateBookRating(bookId: Int!, libId: String!, newRating: Float!): Boolean
+  updateBookRating(bookId: Int!, libId: String!, newRating: Float!): Float
   updateBookReadStatus(bookId: Int!, libId: String!, readStatus: Boolean!): Boolean
 }
 
