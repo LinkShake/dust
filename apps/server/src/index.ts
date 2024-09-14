@@ -3,7 +3,6 @@ import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import cors from "cors";
 import { prisma } from "../prisma/db";
-import DataLoader from "dataloader";
 import { makeSchema } from "nexus";
 import {
   createLibraryMutationField,
@@ -31,8 +30,8 @@ import cookieEncrypter from "cookie-encrypter";
 import passport from "passport";
 import GitHubStrategy from "passport-github2";
 import { v4 as uuidv4 } from "uuid";
-// import { GraphQLError } from "graphql";
-// import { isAuth } from "./middleware/auth";
+import { applyMiddleware } from "graphql-middleware";
+import { isAuth } from "./middleware/auth";
 
 const main = async () => {
   const app = express();
@@ -61,7 +60,9 @@ const main = async () => {
     outputs: { schema: true },
   });
 
-  const server = new ApolloServer({ schema });
+  const schemaWithMiddleware = applyMiddleware(schema, isAuth);
+
+  const server = new ApolloServer({ schema: schemaWithMiddleware });
 
   await server.start();
 
@@ -109,52 +110,16 @@ const main = async () => {
     "/graphql",
     cors<cors.CorsRequest>(),
     express.json(),
-    async (req, res, next) => {
-      const { sid } = req.cookies;
-      if (!sid) {
-        res.redirect("/auth/github");
-        return;
-      }
-      const userId = (await redis.get(`dust_${sid}`)) as string;
-      if (!userId) {
-        res.redirect("/auth/github");
-        return;
-      }
-      const user = await prisma.user.findUnique({
-        where: {
-          userId,
-        },
-      });
-      if (!user) {
-        res.redirect("/auth/github");
-        return;
-      }
-      res.locals.user = user;
-
-      next();
-    },
     expressMiddleware(server, {
       context: async ({ req, res }) => {
+        const { sid } = req.cookies;
+        const userId = (await redis.get(`dust_${sid}`)) as string;
+
         return {
           req,
           res,
           prisma,
-          user: res.locals.user,
-          bookLoader: new DataLoader(async (keys) => {
-            const books = await prisma.book.findMany({
-              where: {
-                libraryId: {
-                  in: keys as string[],
-                },
-              },
-            });
-
-            const bookMap = {} as any;
-            books.forEach((book) => {
-              bookMap[book.id] = book;
-            });
-            return (keys as string[]).map((key) => bookMap[key]);
-          }),
+          session: { userId },
         };
       },
     })

@@ -1,6 +1,5 @@
 import { PrismaClient } from "@prisma/client";
 import { DefaultArgs } from "@prisma/client/runtime/library";
-import DataLoader from "dataloader";
 import { Request, Response } from "express";
 
 export interface Context {
@@ -13,9 +12,5 @@ export interface Context {
     never,
     DefaultArgs
   >;
-  bookLoader: DataLoader<unknown, any, unknown>;
-  user: {
-    userId: string;
-    githubId: string;
-  } | null;
+  session: { userId: string };
 }

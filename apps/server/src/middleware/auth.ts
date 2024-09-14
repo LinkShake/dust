@@ -1,23 +1,20 @@
-import { Request, Response, NextFunction } from "express";
-import { createClient } from "redis";
+import { GraphQLError, GraphQLResolveInfo } from "graphql";
+import { Context } from "../types/Context";
 
 export const isAuth = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
+  resolve: Function,
+  root: any,
+  args: any,
+  context: Context,
+  info: GraphQLResolveInfo
 ) => {
-  const redis = createClient();
-  await redis.connect();
-  const { sid } = req.cookies;
-  if (!sid) {
-    res.redirect("/auth/github");
-    return;
-  }
-  const userId = (await redis.get(`dust_${sid}`)) as string;
-  if (!userId) {
-    res.redirect("/auth/github");
-    return;
+  if (!context.session?.userId) {
+    throw new GraphQLError("Unauthorized user", {
+      extensions: {
+        code: "UNAUTHORIZED_USER",
+      },
+    });
   }
 
-  next();
+  return await resolve(root, args, context, info);
 };

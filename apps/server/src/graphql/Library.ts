@@ -34,7 +34,6 @@ export const librariesQueryField = queryField((t) => {
   t.nonNull.list.nonNull.field("libraries", {
     type: Library.$name,
     async resolve(_, __, ctx: Context) {
-      console.log(ctx.user);
       return await ctx.prisma.library.findMany();
     },
   });
@@ -47,7 +46,7 @@ export const createLibraryMutationField = mutationField("createLibrary", {
     return await ctx.prisma.library.create({
       data: {
         name: libName,
-        ownerId: ctx.user?.userId!,
+        ownerId: ctx.session?.userId!,
         shared: false,
         sharesId: [],
         books: { create: [] },
@@ -86,7 +85,7 @@ export const deleteLibraryMutationField = mutationField("deleteLibrary", {
       },
     });
 
-    if (ctx.user?.userId !== library?.ownerId) {
+    if (ctx.session?.userId !== library?.ownerId) {
       throw new GraphQLError("Permission denied", {
         extensions: {
           code: "UNAUTHORIZED",

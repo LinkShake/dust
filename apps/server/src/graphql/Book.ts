@@ -38,7 +38,7 @@ export const BookType = objectType({
           include: {
             read: {
               where: {
-                userId: ctx.user?.userId,
+                userId: ctx.session?.userId,
               },
             },
           },
@@ -57,7 +57,7 @@ export const BookType = objectType({
           include: {
             rating: {
               where: {
-                userId: ctx.user?.userId,
+                userId: ctx.session?.userId,
               },
             },
           },
@@ -151,13 +151,13 @@ export const insertBookMutationField = mutationField("insertBook", {
         },
         rating: {
           create: {
-            userId: ctx.user?.userId,
+            userId: ctx.session?.userId,
             rating: input.rating,
           },
         },
         read: {
           create: {
-            userId: ctx.user?.userId,
+            userId: ctx.session?.userId,
             read: input.read,
           },
         },
@@ -209,8 +209,8 @@ export const updateBookRatingMutationField = mutationField("updateBookRating", {
         rating: {
           update: {
             where: {
-              userId: ctx.user?.userId!,
-              userId_bookId: { userId: ctx.user?.userId!, bookId },
+              userId: ctx.session?.userId!,
+              userId_bookId: { userId: ctx.session?.userId!, bookId },
             },
             data: {
               rating: newRating,
@@ -243,8 +243,8 @@ export const updateBookReadStatusMutationField = mutationField(
           read: {
             update: {
               where: {
-                userId: ctx.user?.userId!,
-                userId_bookId: { userId: ctx.user?.userId!, bookId },
+                userId: ctx.session?.userId!,
+                userId_bookId: { userId: ctx.session?.userId!, bookId },
               },
               data: {
                 read: readStatus,
