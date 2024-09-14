@@ -26,10 +26,13 @@ import {
 import { LibraryPositionType, PositionType } from "./graphql/Position";
 import { createClient } from "redis";
 import cookieParser from "cookie-parser";
+// @ts-ignore
+import cookieEncrypter from "cookie-encrypter";
 import passport from "passport";
 import GitHubStrategy from "passport-github2";
 import { v4 as uuidv4 } from "uuid";
-import { GraphQLError } from "graphql";
+// import { GraphQLError } from "graphql";
+// import { isAuth } from "./middleware/auth";
 
 const main = async () => {
   const app = express();
@@ -63,6 +66,7 @@ const main = async () => {
   await server.start();
 
   app.use(cookieParser(process.env.COOKIE_SECRET!));
+  app.use(cookieEncrypter(process.env.COOKIE_SECRET!));
 
   app.use(passport.initialize());
 
@@ -88,6 +92,9 @@ const main = async () => {
           user = await prisma.user.create({
             data: {
               githubId: `${githubId}`,
+              libraries: { create: [] },
+              stats: { create: {} },
+              wishlist: { create: [] },
             },
           });
         }
@@ -102,41 +109,37 @@ const main = async () => {
     "/graphql",
     cors<cors.CorsRequest>(),
     express.json(),
+    async (req, res, next) => {
+      const { sid } = req.cookies;
+      if (!sid) {
+        res.redirect("/auth/github");
+        return;
+      }
+      const userId = (await redis.get(`dust_${sid}`)) as string;
+      if (!userId) {
+        res.redirect("/auth/github");
+        return;
+      }
+      const user = await prisma.user.findUnique({
+        where: {
+          userId,
+        },
+      });
+      if (!user) {
+        res.redirect("/auth/github");
+        return;
+      }
+      res.locals.user = user;
+
+      next();
+    },
     expressMiddleware(server, {
       context: async ({ req, res }) => {
-        const { sid } = req.cookies;
-        if (!sid) {
-          throw new GraphQLError("you must be logged in to query this schema", {
-            extensions: {
-              code: "UNAUTHENTICATED",
-            },
-          });
-        }
-        const userId = (await redis.get(`dust_${sid}`)) as string;
-        if (!userId) {
-          throw new GraphQLError("you must be logged in to query this schema", {
-            extensions: {
-              code: "UNAUTHENTICATED",
-            },
-          });
-        }
-        const user = await prisma.user.findUnique({
-          where: {
-            userId,
-          },
-        });
-        if (!user) {
-          throw new GraphQLError("you must be logged in to query this schema", {
-            extensions: {
-              code: "UNAUTHENTICATED",
-            },
-          });
-        }
         return {
           req,
           res,
           prisma,
-          user,
+          user: res.locals.user,
           bookLoader: new DataLoader(async (keys) => {
             const books = await prisma.book.findMany({
               where: {

@@ -72,6 +72,9 @@ importers:
       '@types/graphql-fields':
         specifier: ^1.3.9
         version: 1.3.9
+      cookie-encrypter:
+        specifier: ^1.0.1
+        version: 1.0.1
       cookie-parser:
         specifier: ^1.4.6
         version: 1.4.6
@@ -2917,6 +2920,10 @@ packages:
   /convert-source-map@2.0.0:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
     dev: true
+
+  /cookie-encrypter@1.0.1:
+    resolution: {integrity: sha512-T0EPLKs2vwyaJyRIs3oZ3B/52ny3e09KK+JiMf/6orthjFYCPPX+L8ahlYlipUjIf+ZfXvC0RqDCrxqRRFa05A==}
+    dev: false
 
   /cookie-parser@1.4.6:
     resolution: {integrity: sha512-z3IzaNjdwUC2olLIB5/ITd0/setiaFMLYiZJle7xg5Fe9KWAceil7xszYfHHBtDFYLSgJduS2Ty0P1uJdPDJeA==}
