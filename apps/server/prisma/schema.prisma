@@ -19,7 +19,7 @@ generator nexusPrisma {
 
 model User {
   userId    String    @id @default(cuid())
-  githubId  String
+  githubId  String    @unique
   libraries Library[]
   wishlist  WishList?
   stats     Stats?

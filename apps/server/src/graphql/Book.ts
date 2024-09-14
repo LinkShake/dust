@@ -2,7 +2,6 @@ import {
   enumType,
   inputObjectType,
   intArg,
-  //   intArg,
   mutationField,
   nonNull,
   objectType,
@@ -11,7 +10,6 @@ import {
 } from "nexus";
 import { Book, Edition, Tag } from "nexus-prisma";
 import { Context } from "../types/Context";
-// import { PositionType } from "./Position";
 
 export const BookType = objectType({
   name: Book.$name,
@@ -37,7 +35,7 @@ export const BookType = objectType({
           include: {
             read: {
               where: {
-                userId: "d5001053-43fd-4ace-a0c7-2c790734d08f",
+                userId: ctx.user?.userId,
               },
             },
           },
@@ -56,7 +54,7 @@ export const BookType = objectType({
           include: {
             rating: {
               where: {
-                userId: "d5001053-43fd-4ace-a0c7-2c790734d08f",
+                userId: ctx.user?.userId,
               },
             },
           },
@@ -118,13 +116,13 @@ export const insertBookMutationField = mutationField("insertBook", {
           },
           rating: {
             create: {
-              userId: "d5001053-43fd-4ace-a0c7-2c790734d08f",
+              userId: ctx.user?.userId,
               rating: input.rating,
             },
           },
           read: {
             create: {
-              userId: "d5001053-43fd-4ace-a0c7-2c790734d08f",
+              userId: ctx.user?.userId,
               read: input.read,
             },
           },

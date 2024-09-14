@@ -14,4 +14,8 @@ export interface Context {
     DefaultArgs
   >;
   bookLoader: DataLoader<unknown, any, unknown>;
+  user: {
+    userId: string;
+    githubId: string;
+  } | null;
 }

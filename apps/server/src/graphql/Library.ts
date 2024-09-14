@@ -26,9 +26,7 @@ export const librariesQueryField = queryField((t) => {
   t.nonNull.list.nonNull.field("libraries", {
     type: Library.$name,
     async resolve(_, __, ctx: Context) {
-      const data = await ctx.prisma.library.findMany();
-      console.log(data);
-      return data;
+      return await ctx.prisma.library.findMany();
     },
   });
 });
