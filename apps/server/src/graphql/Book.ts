@@ -170,7 +170,6 @@ export const paginatedBooksQueryField = queryField((t) => {
       libraryId: nonNull(stringArg()),
     },
     async resolve(_, { first, after, libraryId }, ctx: Context) {
-      after;
       if (first <= 0) {
         throw new GraphQLError("Invalid pagination param `first`");
       }
@@ -191,23 +190,43 @@ export const paginatedBooksQueryField = queryField((t) => {
         throw new GraphQLError("Invalid pagination param `first`");
       }
 
-      const data = await ctx.prisma.book.findMany({
-        where: {
-          libraryId,
-        },
-        take: first + 1,
-      });
+      const parsedCursor = +Buffer.from(after, "base64").toString();
+
+      const data =
+        after !== ""
+          ? await ctx.prisma.book.findMany({
+              where: {
+                libraryId,
+              },
+              take: first,
+              skip: 1,
+              cursor: {
+                id: parsedCursor,
+              },
+            })
+          : await ctx.prisma.book.findMany({
+              where: {
+                libraryId,
+              },
+              take: first,
+            });
 
       return {
-        edges: data.slice(0, first).map((currBook, idx) => {
+        edges: data.map((currBook, idx) => {
+          console.log(idx);
+          console.log(data[idx].id);
           return {
-            cursor: idx === booksCount - 1 ? "" : data[idx + 1].id,
+            cursor: Buffer.from(JSON.stringify(data[idx].id)).toString(
+              "base64"
+            ),
             node: currBook,
           };
         }),
         pageInfo: {
-          cursor: first === booksCount ? "" : data[first].id,
-          hasNextPage: first === booksCount ? false : true,
+          cursor: Buffer.from(
+            JSON.stringify(data[booksCount - data.length - 1 - first].id)
+          ).toString("base64"),
+          hasNextPage: first >= booksCount - data.length - 1 ? false : true,
         },
       };
     },
