@@ -1,7 +1,7 @@
 import { objectType } from "nexus";
 import { LibraryPosition, Position } from "nexus-prisma";
 
-export const LibraryPositionType = objectType({
+export const libraryPositionType = objectType({
   name: LibraryPosition.$name,
   definition(t) {
     t.field("libraryName", { type: LibraryPosition.libraryName.type });
@@ -9,7 +9,7 @@ export const LibraryPositionType = objectType({
   },
 });
 
-export const PositionType = objectType({
+export const positionType = objectType({
   name: Position.$name,
   definition(t) {
     t.field("shelf", { type: Position.shelf.type });

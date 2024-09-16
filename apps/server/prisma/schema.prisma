@@ -14,7 +14,7 @@ datasource db {
 }
 
 generator nexusPrisma {
-   provider = "nexus-prisma"
+  provider = "nexus-prisma"
 }
 
 model User {
@@ -59,7 +59,8 @@ model Library {
   sharesId          String[]
   shared            Boolean
   name              String
-  books             Book[] 
+  booksCount        Int      @default(0)
+  books             Book[]
   userLibrary       User?    @relation(fields: [userLibraryUserId], references: [userId])
   userLibraryUserId String?
 
@@ -73,7 +74,7 @@ model Book {
   publisher   String          @default("")
   thumbnail   String?
   pages       Int?
-  ISBN        BigInt?
+  ISBN        String?
   description String          @default("")
   tags        Tag[]           @default([])
   rating      PersonalScore[]

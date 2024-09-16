@@ -11,10 +11,11 @@ import {
   stringArg,
 } from "nexus";
 import { Book, Edition, Tag } from "nexus-prisma";
-import { Context } from "../types/Context";
+import { Context } from "../context";
 import isbn from "node-isbn";
+import { GraphQLError } from "graphql";
 
-export const BookType = objectType({
+export const bookType = objectType({
   name: Book.$name,
   definition(t) {
     t.field(Book.id), t.field("title", { type: Book.title.type });
@@ -69,6 +70,36 @@ export const BookType = objectType({
   },
 });
 
+export const paginatedBookType = objectType({
+  name: "PaginatedBookInfo",
+  definition(t) {
+    t.nonNull.string("cursor");
+    t.nonNull.field("node", {
+      type: bookType,
+    });
+  },
+});
+
+export const pageInfoType = objectType({
+  name: "PageInfo",
+  definition(t) {
+    t.nonNull.string("cursor");
+    t.nonNull.boolean("hasNextPage");
+  },
+});
+
+export const paginatedBooksType = objectType({
+  name: "PaginatedBooks",
+  definition(t) {
+    t.nonNull.list.field("edges", {
+      type: paginatedBookType,
+    });
+    t.nonNull.field("pageInfo", {
+      type: pageInfoType,
+    });
+  },
+});
+
 export const EditionEnum = enumType({
   name: Edition.name,
   members: Edition.members,
@@ -77,6 +108,15 @@ export const EditionEnum = enumType({
 export const TagEnum = enumType({
   name: Tag.name,
   members: Tag.members,
+});
+
+export const PositionInputType = inputObjectType({
+  name: "PositionInputType",
+  definition(t) {
+    t.int("shelf");
+    t.string("libName");
+    t.int("libNum");
+  },
 });
 
 export const BookInputType = inputObjectType({
@@ -88,12 +128,12 @@ export const BookInputType = inputObjectType({
     t.string("description");
     t.string("publisher");
     t.int("pages");
+    t.field("position", { type: PositionInputType });
     t.list.field("tags", {
       type: TagEnum,
     });
     t.float("rating");
     t.int("row");
-    // t.field("position", { type: Position.$name });
     t.string("lang");
     t.boolean("read");
     t.list.field("edition", {
@@ -121,6 +161,59 @@ export const booksQueryField = queryField((t) => {
   });
 });
 
+export const paginatedBooksQueryField = queryField((t) => {
+  t.nonNull.field("paginatedBooks", {
+    type: paginatedBooksType,
+    args: {
+      first: nonNull(intArg()),
+      after: nonNull(stringArg()),
+      libraryId: nonNull(stringArg()),
+    },
+    async resolve(_, { first, after, libraryId }, ctx: Context) {
+      after;
+      if (first <= 0) {
+        throw new GraphQLError("Invalid pagination param `first`");
+      }
+
+      const { booksCount } =
+        (await ctx.prisma.library.findUnique({
+          where: {
+            id: libraryId,
+          },
+          select: {
+            booksCount: true,
+          },
+        })) || {};
+
+      if (!booksCount) return;
+
+      if (first > booksCount) {
+        throw new GraphQLError("Invalid pagination param `first`");
+      }
+
+      const data = await ctx.prisma.book.findMany({
+        where: {
+          libraryId,
+        },
+        take: first + 1,
+      });
+
+      return {
+        edges: data.slice(0, first).map((currBook, idx) => {
+          return {
+            cursor: idx === booksCount - 1 ? "" : data[idx + 1].id,
+            node: currBook,
+          };
+        }),
+        pageInfo: {
+          cursor: first === booksCount ? "" : data[first].id,
+          hasNextPage: first === booksCount ? false : true,
+        },
+      };
+    },
+  });
+});
+
 export const bookByIdQueryField = queryField((t) => {
   t.nonNull.field("book", {
     type: Book.$name,
@@ -143,22 +236,48 @@ export const insertBookMutationField = mutationField("insertBook", {
   type: Book.$name,
   args: { data: BookInputType },
   async resolve(_, { data: input }, ctx: Context) {
+    await ctx.prisma.library.update({
+      where: {
+        id: input.libraryId,
+      },
+      data: {
+        booksCount: {
+          increment: 1,
+        },
+      },
+    });
+
     return await ctx.prisma.book.create({
       data: {
         ...input,
         edition: {
-          set: Array.isArray(input.edition) ? input.edition : [input.edition],
+          set: Array.isArray(input.edition)
+            ? input.edition
+            : input.edition
+              ? [input.edition]
+              : [],
         },
         rating: {
           create: {
             userId: ctx.session?.userId,
-            rating: input.rating,
+            rating: input.rating || 0.0,
           },
         },
         read: {
           create: {
             userId: ctx.session?.userId,
-            read: input.read,
+            read: input.read ?? false,
+          },
+        },
+        position: {
+          create: {
+            shelf: input.position.shelf,
+            libraryPosition: {
+              create: {
+                libraryName: input.position.libName,
+                libraryNumber: input.position.libNum,
+              },
+            },
           },
         },
       },
@@ -177,10 +296,29 @@ export const insertBookByIsbnMutationField = mutationField("insertBookByIsbn", {
   },
 });
 
+export const loadBookByIsbnMutationField = mutationField("loadBookByIsbn", {
+  type: "JSON",
+  args: { isbn: nonNull(stringArg()) },
+  async resolve(_, { isbn: userIsbn }, __) {
+    return await isbn.resolve(userIsbn);
+  },
+});
+
 export const deleteBookMutationField = mutationField("deleteBook", {
   type: "Boolean",
   args: { bookId: nonNull(intArg()), libId: nonNull(stringArg()) },
   async resolve(_, { bookId, libId }, ctx: Context) {
+    await ctx.prisma.library.update({
+      where: {
+        id: libId,
+      },
+      data: {
+        booksCount: {
+          decrement: 1,
+        },
+      },
+    });
+
     await ctx.prisma.book.delete({
       where: {
         id: bookId,
@@ -233,7 +371,7 @@ export const updateBookReadStatusMutationField = mutationField(
       libId: nonNull(stringArg()),
       readStatus: nonNull(booleanArg()),
     },
-    async resolve(_, { bookId, libId, readStatus }, ctx: Context) {
+    async resolve(_, { bookId, libId, readStatus }, ctx) {
       await ctx.prisma.book.update({
         where: {
           id: bookId,

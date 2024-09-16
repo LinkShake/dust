@@ -26,6 +26,7 @@ input BookInputType {
   lang: String
   libraryId: String!
   pages: Int
+  position: PositionInputType
   price: Float
   publisher: String
   rating: Float
@@ -39,6 +40,8 @@ enum Edition {
   HARDBACK
   PAPERBACK
 }
+
+scalar JSON
 
 type Library {
   books: [Book!]!
@@ -59,9 +62,25 @@ type Mutation {
   deleteLibrary(libId: String!): Boolean
   insertBook(data: BookInputType): Book
   insertBookByIsbn(isbn: String!): Boolean
+  loadBookByIsbn(isbn: String!): JSON
   shareLibrary(libId: String!, usersId: [String]!): Boolean
   updateBookRating(bookId: Int!, libId: String!, newRating: Float!): Float
   updateBookReadStatus(bookId: Int!, libId: String!, readStatus: Boolean!): Boolean
+}
+
+type PageInfo {
+  cursor: String!
+  hasNextPage: Boolean!
+}
+
+type PaginatedBookInfo {
+  cursor: String!
+  node: Book!
+}
+
+type PaginatedBooks {
+  edges: [PaginatedBookInfo]!
+  pageInfo: PageInfo!
 }
 
 type Position {
@@ -69,10 +88,16 @@ type Position {
   shelf: Int!
 }
 
+input PositionInputType {
+  libName: String
+  libNum: Int
+  shelf: Int
+}
+
 type Query {
   book(id: Int!, libraryId: String!): Book!
-  books(libraryId: String!): [Book!]!
   libraries: [Library!]!
+  paginatedBooks(after: String!, first: Int!, libraryId: String!): PaginatedBooks!
 }
 
 enum Tag {

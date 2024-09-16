@@ -1,5 +1,5 @@
 import { GraphQLError, GraphQLResolveInfo } from "graphql";
-import { Context } from "../types/Context";
+import { Context } from "../context";
 
 export const isAuth = async (
   resolve: Function,

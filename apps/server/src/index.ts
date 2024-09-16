@@ -8,21 +8,23 @@ import {
   createLibraryMutationField,
   deleteLibraryMutationField,
   librariesQueryField,
-  LibraryType,
+  libraryType,
   shareLibraryMutationField,
 } from "./graphql/Library";
 import {
   insertBookMutationField,
-  BookType,
+  bookType,
   EditionEnum,
-  booksQueryField,
   bookByIdQueryField,
   insertBookByIsbnMutationField,
   deleteBookMutationField,
   updateBookRatingMutationField,
   updateBookReadStatusMutationField,
+  loadBookByIsbnMutationField,
+  paginatedBooksQueryField,
+  paginatedBookType,
 } from "./graphql/Book";
-import { LibraryPositionType, PositionType } from "./graphql/Position";
+import { libraryPositionType, positionType } from "./graphql/Position";
 import { createClient } from "redis";
 import cookieParser from "cookie-parser";
 // @ts-ignore
@@ -32,6 +34,9 @@ import GitHubStrategy from "passport-github2";
 import { v4 as uuidv4 } from "uuid";
 import { applyMiddleware } from "graphql-middleware";
 import { isAuth } from "./middleware/auth";
+import path from "path";
+import { jsonScalar } from "./graphql/Scalars";
+import { cookieOpts } from "./const";
 
 const main = async () => {
   const app = express();
@@ -40,24 +45,31 @@ const main = async () => {
 
   const schema = makeSchema({
     types: [
-      LibraryType,
+      libraryType,
       librariesQueryField,
       createLibraryMutationField,
       shareLibraryMutationField,
       deleteLibraryMutationField,
-      BookType,
-      booksQueryField,
+      bookType,
+      paginatedBooksQueryField,
+      paginatedBookType,
       bookByIdQueryField,
       insertBookMutationField,
       insertBookByIsbnMutationField,
+      loadBookByIsbnMutationField,
       deleteBookMutationField,
       updateBookRatingMutationField,
       updateBookReadStatusMutationField,
-      PositionType,
-      LibraryPositionType,
+      positionType,
+      libraryPositionType,
       EditionEnum,
+      jsonScalar,
     ],
     outputs: { schema: true },
+    contextType: {
+      module: path.join(__dirname, "context.ts"),
+      export: "Context",
+    },
   });
 
   const schemaWithMiddleware = applyMiddleware(schema, isAuth);
@@ -144,7 +156,7 @@ const main = async () => {
       const sid = uuidv4();
       const typedUser = (req.user as { userId: string }).userId;
       await redis.set(`dust_${sid}`, typedUser);
-      res.cookie("sid", sid);
+      res.cookie("sid", sid, cookieOpts);
       // Successful authentication, redirect home.
       res.redirect("/graphql");
     }

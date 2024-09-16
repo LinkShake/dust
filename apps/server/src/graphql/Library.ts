@@ -7,10 +7,10 @@ import {
   stringArg,
 } from "nexus";
 import { Library } from "nexus-prisma";
-import { Context } from "../types/Context";
+import { Context } from "../context";
 import { GraphQLError } from "graphql";
 
-export const LibraryType = objectType({
+export const libraryType = objectType({
   name: Library.$name,
   definition(t) {
     t.field("id", { type: Library.id.type });

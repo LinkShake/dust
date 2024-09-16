@@ -1,4 +1,4 @@
-const cookieOpts = {
+export const cookieOpts = {
   httpOnly: true,
   secure: false,
   sameSite: "lax",
