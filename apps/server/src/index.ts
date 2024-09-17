@@ -13,7 +13,6 @@ import {
 } from "./graphql/Library";
 import {
   insertBookMutationField,
-  bookType,
   EditionEnum,
   bookByIdQueryField,
   insertBookByIsbnMutationField,
@@ -22,7 +21,6 @@ import {
   updateBookReadStatusMutationField,
   loadBookByIsbnMutationField,
   paginatedBooksQueryField,
-  paginatedBookType,
 } from "./graphql/Book";
 import { libraryPositionType, positionType } from "./graphql/Position";
 import { createClient } from "redis";
@@ -37,6 +35,7 @@ import { isAuth } from "./middleware/auth";
 import path from "path";
 import { jsonScalar } from "./graphql/Scalars";
 import { cookieOpts } from "./const";
+import { bookType, paginatedBookType } from "./graphql/shared/booksPagination";
 
 const main = async () => {
   const app = express();

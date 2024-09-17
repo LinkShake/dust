@@ -1,4 +1,5 @@
 import {
+  intArg,
   list,
   mutationField,
   nonNull,
@@ -9,6 +10,7 @@ import {
 import { Library } from "nexus-prisma";
 import { Context } from "../context";
 import { GraphQLError } from "graphql";
+import { paginatedBooksType } from "./shared/booksPagination";
 
 export const libraryType = objectType({
   name: Library.$name,
@@ -18,13 +20,84 @@ export const libraryType = objectType({
     t.field("shared", { type: Library.shared.type });
     t.field("sharesId", { type: Library.sharesId.type });
     t.field("books", {
-      type: Library.books.type,
-      resolve: async (parent, _, ctx: Context) => {
-        return await ctx.prisma.book.findMany({
-          where: {
-            libraryId: parent.id,
+      type: paginatedBooksType,
+      args: {
+        first: nonNull(intArg()),
+        after: nonNull(stringArg()),
+      },
+      resolve: async (parent, { first, after }, ctx: Context) => {
+        if (first <= 0) {
+          throw new GraphQLError("Invalid pagination param `first`");
+        }
+
+        const { booksCount } = parent;
+
+        if (!booksCount) return;
+
+        if (first > booksCount) {
+          throw new GraphQLError("Invalid pagination param `first`");
+        }
+
+        const parsedCursor = +Buffer.from(after, "base64").toString();
+
+        const data =
+          after !== ""
+            ? await ctx.prisma.book.findMany({
+                where: {
+                  libraryId: parent.id,
+                },
+                take: first,
+                skip: 1,
+                cursor: {
+                  id: parsedCursor,
+                },
+              })
+            : await ctx.prisma.book.findMany({
+                where: {
+                  libraryId: parent.id,
+                },
+                take: first,
+              });
+
+        const hasNextPage = await (async () => {
+          if (!after && booksCount > 0) {
+            return true;
+          }
+          const [nextBook] = await ctx.prisma.book.findMany({
+            where: {
+              libraryId: parent.id,
+            },
+            take: 1,
+            skip: 1,
+            cursor: {
+              id: data[data.length - 1].id,
+            },
+          });
+
+          if (nextBook) {
+            return true;
+          }
+
+          return false;
+        })();
+
+        return {
+          edges: data.map((currBook) => {
+            return {
+              cursor: Buffer.from(JSON.stringify(currBook.id)).toString(
+                "base64"
+              ),
+              node: currBook,
+            };
+          }),
+          pageInfo: {
+            cursor: Buffer.from(
+              JSON.stringify(data[data.length - 1].id)
+            ).toString("base64"),
+            // to fix
+            hasNextPage,
           },
-        });
+        };
       },
     });
   },

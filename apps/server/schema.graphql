@@ -44,7 +44,7 @@ enum Edition {
 scalar JSON
 
 type Library {
-  books: [Book!]!
+  books(after: String!, first: Int!): PaginatedBooks
   id: ID!
   ownerId: String!
   shared: Boolean!
