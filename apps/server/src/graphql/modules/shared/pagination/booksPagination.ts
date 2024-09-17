@@ -54,24 +54,18 @@ export const getPaginatedBooks = async (
 
   const parsedCursor = +Buffer.from(after, "base64").toString();
 
-  const data =
-    after !== ""
-      ? await ctx.prisma.book.findMany({
-          where: {
-            libraryId,
-          },
-          take: first,
-          skip: 1,
-          cursor: {
-            id: parsedCursor,
-          },
-        })
-      : await ctx.prisma.book.findMany({
-          where: {
-            libraryId,
-          },
-          take: first,
-        });
+  const data = await ctx.prisma.book.findMany({
+    where: {
+      libraryId,
+    },
+    take: first,
+    ...(after !== "" && {
+      skip: 1,
+      cursor: {
+        id: parsedCursor,
+      },
+    }),
+  });
 
   const hasNextPage = await (async () => {
     if (!after && booksCount > 0) {

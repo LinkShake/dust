@@ -7,7 +7,7 @@ import {
   booleanArg,
 } from "nexus";
 import { Book } from "nexus-prisma";
-import { BookInputType } from "./bookInputs";
+import { BookInputType, UpdateBookDataInputType } from "./bookInputs";
 import { Context } from "../../../context";
 import isbn from "node-isbn";
 
@@ -34,6 +34,13 @@ export const insertBookMutationField = mutationField("insertBook", {
             ? input.edition
             : input.edition
               ? [input.edition]
+              : [],
+        },
+        tags: {
+          set: Array.isArray(input.tags)
+            ? input.tags
+            : input.tags
+              ? [input.tags]
               : [],
         },
         rating: {
@@ -175,3 +182,91 @@ export const updateBookReadStatusMutationField = mutationField(
     },
   }
 );
+
+export const updateBookDataMutationField = mutationField("updateBookData", {
+  type: Book.$name,
+  args: {
+    bookId: nonNull(intArg()),
+    data: UpdateBookDataInputType,
+  },
+  async resolve(_, { bookId, data: input }, ctx: Context) {
+    return await ctx.prisma.book.update({
+      where: {
+        id: bookId,
+      },
+      data: {
+        ...input,
+        ...(input.edition && {
+          edition: {
+            set: Array.isArray(input.edition)
+              ? input.edition
+              : input.edition
+                ? [input.edition]
+                : [],
+          },
+        }),
+        ...(input.tags && {
+          tags: {
+            set: Array.isArray(input.tags)
+              ? input.tags
+              : input.tags
+                ? [input.tags]
+                : [],
+          },
+        }),
+        ...(input.rating ?? {
+          rating: {
+            update: {
+              where: {
+                userId: ctx.session.userId,
+                userId_bookId: { bookId, userId: ctx.session.userId },
+              },
+              data: {
+                rating: input.rating,
+              },
+            },
+          },
+        }),
+        ...(input.read ?? {
+          read: {
+            update: {
+              where: {
+                userId: ctx.session.userId,
+                userId_bookId: { bookId, userId: ctx.session.userId },
+              },
+              data: {
+                read: input.read,
+              },
+            },
+          },
+        }),
+        ...(input.position && {
+          position: {
+            position: {
+              update: {
+                where: {
+                  bookId,
+                },
+                data: {
+                  ...(input.shelf ?? { shelf: input.shelf }),
+                  libraryPosition: {
+                    update: {
+                      data: {
+                        ...(input.libraryName && {
+                          libraryName: input.libraryName,
+                        }),
+                        ...(input.libraryNumber ?? {
+                          libraryNumber: input.libraryNumber,
+                        }),
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        }),
+      },
+    });
+  },
+});

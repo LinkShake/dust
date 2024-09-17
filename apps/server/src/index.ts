@@ -18,6 +18,7 @@ import { cookieOpts } from "./constants";
 import { graphqlTypes } from "./graphql/modules/exports/types";
 import { graphqlQueries } from "./graphql/modules/exports/queries";
 import { graphqlMutations } from "./graphql/modules/exports/mutations";
+import { graphqlInputs } from "./graphql/modules/exports/inputs";
 
 const main = async () => {
   const app = express();
@@ -25,7 +26,7 @@ const main = async () => {
   await redis.connect();
 
   const schema = makeSchema({
-    types: [graphqlTypes, graphqlQueries, graphqlMutations],
+    types: [graphqlTypes, graphqlInputs, graphqlQueries, graphqlMutations],
     outputs: { schema: true },
     contextType: {
       module: path.join(__dirname, "context.ts"),

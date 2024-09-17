@@ -7,6 +7,7 @@ export const graphqlMutations = [
   bookMutations.loadBookByIsbnMutationField,
   bookMutations.updateBookRatingMutationField,
   bookMutations.updateBookReadStatusMutationField,
+  bookMutations.updateBookDataMutationField,
   libraryMutations.createLibraryMutationField,
   libraryMutations.shareLibraryMutationField,
   libraryMutations.deleteLibraryMutationField,
