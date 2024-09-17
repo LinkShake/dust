@@ -1,6 +1,6 @@
 import { objectType } from "nexus";
 import { Book } from "nexus-prisma";
-import { Context } from "../../context";
+import { Context } from "../../../context";
 
 export const bookType = objectType({
   name: Book.$name,
@@ -53,36 +53,6 @@ export const bookType = objectType({
 
         return data?.rating.length ? data.rating[0].rating : 0.0;
       },
-    });
-  },
-});
-
-export const paginatedBookType = objectType({
-  name: "PaginatedBookInfo",
-  definition(t) {
-    t.nonNull.string("cursor");
-    t.nonNull.field("node", {
-      type: bookType,
-    });
-  },
-});
-
-export const pageInfoType = objectType({
-  name: "PageInfo",
-  definition(t) {
-    t.nonNull.string("cursor");
-    t.nonNull.boolean("hasNextPage");
-  },
-});
-
-export const paginatedBooksType = objectType({
-  name: "PaginatedBooks",
-  definition(t) {
-    t.nonNull.list.field("edges", {
-      type: paginatedBookType,
-    });
-    t.nonNull.field("pageInfo", {
-      type: pageInfoType,
     });
   },
 });

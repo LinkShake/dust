@@ -4,25 +4,6 @@ import { expressMiddleware } from "@apollo/server/express4";
 import cors from "cors";
 import { prisma } from "../prisma/db";
 import { makeSchema } from "nexus";
-import {
-  createLibraryMutationField,
-  deleteLibraryMutationField,
-  librariesQueryField,
-  libraryType,
-  shareLibraryMutationField,
-} from "./graphql/Library";
-import {
-  insertBookMutationField,
-  EditionEnum,
-  bookByIdQueryField,
-  insertBookByIsbnMutationField,
-  deleteBookMutationField,
-  updateBookRatingMutationField,
-  updateBookReadStatusMutationField,
-  loadBookByIsbnMutationField,
-  paginatedBooksQueryField,
-} from "./graphql/Book";
-import { libraryPositionType, positionType } from "./graphql/Position";
 import { createClient } from "redis";
 import cookieParser from "cookie-parser";
 // @ts-ignore
@@ -33,9 +14,10 @@ import { v4 as uuidv4 } from "uuid";
 import { applyMiddleware } from "graphql-middleware";
 import { isAuth } from "./middleware/auth";
 import path from "path";
-import { jsonScalar } from "./graphql/Scalars";
-import { cookieOpts } from "./const";
-import { bookType, paginatedBookType } from "./graphql/shared/booksPagination";
+import { cookieOpts } from "./constants";
+import { graphqlTypes } from "./graphql/modules/exports/types";
+import { graphqlQueries } from "./graphql/modules/exports/queries";
+import { graphqlMutations } from "./graphql/modules/exports/mutations";
 
 const main = async () => {
   const app = express();
@@ -43,27 +25,7 @@ const main = async () => {
   await redis.connect();
 
   const schema = makeSchema({
-    types: [
-      libraryType,
-      librariesQueryField,
-      createLibraryMutationField,
-      shareLibraryMutationField,
-      deleteLibraryMutationField,
-      bookType,
-      paginatedBooksQueryField,
-      paginatedBookType,
-      bookByIdQueryField,
-      insertBookMutationField,
-      insertBookByIsbnMutationField,
-      loadBookByIsbnMutationField,
-      deleteBookMutationField,
-      updateBookRatingMutationField,
-      updateBookReadStatusMutationField,
-      positionType,
-      libraryPositionType,
-      EditionEnum,
-      jsonScalar,
-    ],
+    types: [graphqlTypes, graphqlQueries, graphqlMutations],
     outputs: { schema: true },
     contextType: {
       module: path.join(__dirname, "context.ts"),

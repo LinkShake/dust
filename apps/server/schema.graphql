@@ -61,7 +61,6 @@ type Mutation {
   deleteBook(bookId: Int!, libId: String!): Boolean
   deleteLibrary(libId: String!): Boolean
   insertBook(data: BookInputType): Book
-  insertBookByIsbn(isbn: String!): Boolean
   loadBookByIsbn(isbn: String!): JSON
   shareLibrary(libId: String!, usersId: [String]!): Boolean
   updateBookRating(bookId: Int!, libId: String!, newRating: Float!): Float

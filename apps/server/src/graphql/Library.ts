@@ -10,7 +10,7 @@ import {
 import { Library } from "nexus-prisma";
 import { Context } from "../context";
 import { GraphQLError } from "graphql";
-import { paginatedBooksType } from "./shared/booksPagination";
+import { paginatedBooksType } from "./modules/shared/pagination/booksPagination";
 
 export const libraryType = objectType({
   name: Library.$name,
