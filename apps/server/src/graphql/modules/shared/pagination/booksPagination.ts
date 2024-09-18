@@ -1,5 +1,5 @@
 import { objectType } from "nexus";
-import { bookType } from "../../book/bookType";
+import { bookType } from "../../book/types";
 import { Context } from "../../../../context";
 import { GraphQLError } from "graphql";
 

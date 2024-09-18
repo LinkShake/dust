@@ -55,7 +55,7 @@ model LibraryInfo {
   prevelantTags    Tag[]    @default([])
   italianBooks     Int      @default(0)
   englishBooks     Int      @default(0)
-  prevelantEdition Edition
+  prevelantEdition Edition?
 }
 
 model Library {

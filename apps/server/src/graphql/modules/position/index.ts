@@ -1,1 +1,1 @@
-export * as types from "./positionType";
+export * as types from "./types";

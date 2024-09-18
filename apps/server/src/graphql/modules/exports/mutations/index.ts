@@ -1,5 +1,5 @@
-import { mutations as bookMutations } from "../../book/index";
-import { mutations as libraryMutations } from "../../library/index";
+import { mutations as bookMutations } from "../../book";
+import { mutations as libraryMutations } from "../../library";
 
 export const graphqlMutations = [
   bookMutations.insertBookMutationField,

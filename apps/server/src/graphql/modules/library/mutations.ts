@@ -14,6 +14,15 @@ export const createLibraryMutationField = mutationField("createLibrary", {
         shared: false,
         sharesId: [],
         books: { create: [] },
+        info: {
+          create: {
+            members: {
+              connect: {
+                userId: ctx.session.userId,
+              },
+            },
+          },
+        },
       },
     });
   },

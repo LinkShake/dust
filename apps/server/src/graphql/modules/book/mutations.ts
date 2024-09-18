@@ -7,7 +7,7 @@ import {
   booleanArg,
 } from "nexus";
 import { Book } from "nexus-prisma";
-import { BookInputType, UpdateBookDataInputType } from "./bookInputs";
+import { BookInputType, UpdateBookDataInputType } from "./inputs";
 import { Context } from "../../../context";
 import isbn from "node-isbn";
 

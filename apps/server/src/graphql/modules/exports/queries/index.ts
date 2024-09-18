@@ -1,5 +1,5 @@
-import { queries as bookQueries } from "../../book/index";
-import { queries as libraryQueries } from "../../library/index";
+import { queries as bookQueries } from "../../book";
+import { queries as libraryQueries } from "../../library";
 
 export const graphqlQueries = [
   bookQueries.paginatedBooksQueryField,

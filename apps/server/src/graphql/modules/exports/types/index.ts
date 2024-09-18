@@ -1,6 +1,6 @@
-import { types as book } from "../../book/index";
-import { types as library } from "../../library/index";
-import { types as position } from "../../position/index";
+import { types as book } from "../../book";
+import { types as library } from "../../library";
+import { types as position } from "../../position";
 import { enums, scalars, paginatedTypes } from "../../shared";
 
 export const graphqlTypes = [
