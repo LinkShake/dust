@@ -69,7 +69,7 @@ const main = async () => {
               githubId: `${githubId}`,
               libraries: { create: [] },
               stats: { create: {} },
-              wishlist: { create: [] },
+              favorites: { create: [] },
             },
           });
         }

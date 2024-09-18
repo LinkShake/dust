@@ -18,11 +18,13 @@ generator nexusPrisma {
 }
 
 model User {
-  userId    String    @id @default(cuid())
-  githubId  String    @unique
-  libraries Library[]
-  wishlist  WishList?
-  stats     Stats?
+  userId        String       @id @default(cuid())
+  githubId      String       @unique
+  libraries     Library[]
+  favorites     Book[]
+  stats         Stats?
+  libraryInfo   LibraryInfo? @relation(fields: [libraryInfoId], references: [id])
+  libraryInfoId String?
 }
 
 model Stats {
@@ -38,7 +40,6 @@ model Stats {
 }
 
 model Genre {
-  id              String @id @default(cuid())
   tag             Tag
   booksNum        Int
   userStats       Stats  @relation(fields: [userStatsUserId], references: [statsUserId])
@@ -47,21 +48,27 @@ model Genre {
   @@unique([userStatsUserId, tag])
 }
 
-model WishList {
-  books          Book[]
-  user           User   @relation(fields: [wishListUserId], references: [userId])
-  wishListUserId String @id @unique
+model LibraryInfo {
+  id               String   @id @default(cuid())
+  library          Library?
+  members          User[]
+  prevelantTags    Tag[]    @default([])
+  italianBooks     Int      @default(0)
+  englishBooks     Int      @default(0)
+  prevelantEdition Edition
 }
 
 model Library {
-  id                String   @id @default(cuid())
+  id                String      @id @default(cuid())
   ownerId           String
   sharesId          String[]
   shared            Boolean
   name              String
-  booksCount        Int      @default(0)
+  info              LibraryInfo @relation(fields: [infoId], references: [id])
+  infoId            String      @unique
+  booksCount        Int         @default(0)
   books             Book[]
-  userLibrary       User?    @relation(fields: [userLibraryUserId], references: [userId])
+  userLibrary       User?       @relation(fields: [userLibraryUserId], references: [userId])
   userLibraryUserId String?
 
   @@unique([userLibraryUserId, name])
@@ -88,8 +95,8 @@ model Book {
   gifted      Boolean?        @default(false)
   library     Library?        @relation(fields: [libraryId], references: [id])
   libraryId   String?
-  wishlist    WishList?       @relation(fields: [wishListId], references: [wishListUserId])
-  wishListId  String?
+  user        User?           @relation(fields: [userId], references: [userId])
+  userId      String?
 }
 
 model ReadCheck {
