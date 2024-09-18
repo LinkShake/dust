@@ -68,6 +68,9 @@ type Mutation {
   updateBookReadStatus(bookId: Int!, libId: String!, readStatus: Boolean!): Boolean
 }
 
+"\n    This scalar should never make it into production. It is used as a placeholder for situations\n    where GraphQL Nexus encounters a missing type. We don't want to error immediately, otherwise\n    the TypeScript definitions will not be updated.\n  "
+scalar NEXUS__UNKNOWN__TYPE
+
 type PageInfo {
   cursor: String!
   hasNextPage: Boolean!
@@ -98,6 +101,7 @@ type Query {
   book(id: Int!, libraryId: String!): Book!
   libraries: [Library!]!
   paginatedBooks(after: String!, first: Int!, libraryId: String!): PaginatedBooks!
+  user: User
 }
 
 enum Tag {
@@ -129,4 +133,12 @@ input UpdateBookDataInput {
   row: Int
   tags: [Tag]
   title: String
+}
+
+type User {
+  favorites: [Book!]!
+  githubId: String!
+  libraries: [Library!]!
+  stats: NEXUS__UNKNOWN__TYPE
+  userId: ID!
 }
