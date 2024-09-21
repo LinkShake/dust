@@ -1,20 +1,10 @@
-import { GraphQLError, GraphQLResolveInfo } from "graphql";
 import { Context } from "../context";
+import { AuthChecker } from "type-graphql";
 
-export const isAuth = async (
-  resolve: Function,
-  root: any,
-  args: any,
-  context: Context,
-  info: GraphQLResolveInfo
-) => {
+export const isAuth: AuthChecker<Context> = ({ context }, _roles) => {
   if (!context.session?.userId) {
-    throw new GraphQLError("Unauthorized user", {
-      extensions: {
-        code: "UNAUTHORIZED_USER",
-      },
-    });
+    return false;
   }
 
-  return await resolve(root, args, context, info);
+  return true; // or 'false' if access is denied
 };

@@ -1,16 +1,9 @@
-import { PrismaClient } from "@prisma/client";
-import { DefaultArgs } from "@prisma/client/runtime/library";
 import { Request, Response } from "express";
+import { DataSource } from "typeorm";
 
 export interface Context {
   req: Request;
   res: Response;
-  prisma: PrismaClient<
-    {
-      log: ("info" | "query" | "warn" | "error")[];
-    },
-    never,
-    DefaultArgs
-  >;
+  db: DataSource;
   session: { userId: string };
 }

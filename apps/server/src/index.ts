@@ -2,12 +2,12 @@ import "reflect-metadata";
 import * as dotenv from "dotenv";
 dotenv.config();
 import express from "express";
-// import { ApolloServer } from "@apollo/server";
-// import { expressMiddleware } from "@apollo/server/express4";
-// import cors from "cors";
+import { ApolloServer } from "@apollo/server";
+import { expressMiddleware } from "@apollo/server/express4";
+import cors from "cors";
 // import { makeSchema } from "nexus";
 import { createClient } from "redis";
-// import cookieParser from "cookie-parser";
+import cookieParser from "cookie-parser";
 // @ts-ignore
 import cookieEncrypter from "cookie-encrypter";
 import passport from "passport";
@@ -17,48 +17,30 @@ import { v4 as uuidv4 } from "uuid";
 // import { isAuth } from "./middleware/auth";
 // import path from "path";
 import { cookieOpts } from "./constants";
-import { DataSource } from "typeorm";
+import { db } from "./db";
+// import path from "path";
+import { UserResolver } from "./resolvers/UserResolver";
+import { buildSchema } from "type-graphql";
+import { BookResolver } from "./resolvers/BookResolver";
 import { Stats, User } from "./entities/User";
-import { Book } from "./entities/Book";
-import {
-  BookPosition,
-  PersonalScore,
-  ReadCheck,
-} from "./entities/BookRelations";
-import { Library } from "./entities/Library";
-import path from "path";
-// import { buildSchema } from "type-graphql";
+import { isAuth } from "./middleware/auth";
+// import { Book } from "./entities/Book";
 
 const main = async () => {
   const app = express();
   const redis = createClient();
   await redis.connect();
 
-  const dataSource = new DataSource({
-    type: "postgres",
-    url: process.env.DATABASE_URL!,
-    // synchronize: true,
-    logging: true,
-    migrations: [path.join(__dirname, "./migrations/*")],
-    entities: [
-      User,
-      Stats,
-      Library,
-      Book,
-      BookPosition,
-      PersonalScore,
-      ReadCheck,
-    ],
+  await db.initialize();
+
+  // await db.runMigrations();
+
+  const schema = await buildSchema({
+    resolvers: [UserResolver, BookResolver],
+    validate: false,
+    emitSchemaFile: true,
+    authChecker: isAuth,
   });
-
-  // dataSource.initialize().then(async (conn) => await conn.runMigrations());
-  await dataSource.initialize();
-
-  // await dataSource.runMigrations();
-
-  // const schema = await buildSchema({
-  //   resolvers: []
-  // })
 
   // const schema = makeSchema({
   //   types: [graphqlTypes, graphqlInputs, graphqlQueries, graphqlMutations],
@@ -71,16 +53,14 @@ const main = async () => {
 
   // const schemaWithMiddleware = applyMiddleware(schema, isAuth);
 
-  // const server = new ApolloServer({ schema: schemaWithMiddleware });
+  const server = new ApolloServer({ schema });
 
-  // await server.start();
+  await server.start();
 
-  // app.use(cookieParser(process.env.COOKIE_SECRET!));
-  // app.use(cookieEncrypter(process.env.COOKIE_SECRET!));
+  app.use(cookieParser(process.env.COOKIE_SECRET!));
+  app.use(cookieEncrypter(process.env.COOKIE_SECRET!));
 
   app.use(passport.initialize());
-
-  // console.log(process.env.GITHUB_CLIENT_ID!);
 
   passport.use(
     new GitHubStrategy.Strategy(
@@ -93,49 +73,47 @@ const main = async () => {
       async (_accessToken, _refreshToken, profile, done) => {
         // 1. grab id
         const githubId = profile._json.id as string;
-        githubId;
 
-        // let user = await prisma.user.findUnique({
-        //   where: {
-        //     githubId: `${githubId}`,
-        //   },
-        // });
+        let user = await db.getRepository(User).findOne({
+          where: {
+            githubId: `${githubId}`,
+          },
+        });
 
-        // if (!user) {
-        //   user = await prisma.user.create({
-        //     data: {
-        //       githubId: `${githubId}`,
-        //       libraries: { create: [] },
-        //       stats: { create: {} },
-        //       favorites: { create: [] },
-        //     },
-        //   });
-        // }
+        if (!user) {
+          user = new User();
+          user.githubId = `${githubId}`;
+          user.favorites = [];
+          user.libraries = [];
+          const stats = new Stats();
+          user.stats = stats;
+          await user.save();
+        }
 
         // 4. return user
-        done(null);
+        done(null, user);
       }
     ) as any
   );
 
-  // app.use(
-  //   "/graphql",
-  //   cors<cors.CorsRequest>(),
-  //   express.json(),
-  //   expressMiddleware(server, {
-  //     context: async ({ req, res }) => {
-  //       const { sid } = req.cookies;
-  //       const userId = (await redis.get(`dust_${sid}`)) as string;
+  app.use(
+    "/graphql",
+    cors<cors.CorsRequest>(),
+    express.json(),
+    expressMiddleware(server, {
+      context: async ({ req, res }) => {
+        const { sid } = req.cookies;
+        const userId = (await redis.get(`dust_${sid}`)) as string;
 
-  //       return {
-  //         req,
-  //         res,
-  //         prisma,
-  //         session: { userId },
-  //       };
-  //     },
-  //   })
-  // );
+        return {
+          req,
+          res,
+          db,
+          session: { userId },
+        };
+      },
+    })
+  );
 
   app.get("/login", (_, res) => {
     res.send("something went wrong in the auth flow");
@@ -154,7 +132,7 @@ const main = async () => {
     }),
     async (req, res) => {
       const sid = uuidv4();
-      const typedUser = (req.user as { userId: string }).userId;
+      const typedUser = (req.user as { id: string }).id;
       await redis.set(`dust_${sid}`, typedUser);
       res.cookie("sid", sid, cookieOpts);
       // Successful authentication, redirect home.

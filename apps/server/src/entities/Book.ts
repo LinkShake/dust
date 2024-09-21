@@ -49,8 +49,8 @@ export class Book extends BaseEntity {
   @Column({ default: "" })
   description: string;
 
-  @Field((_) => [Tag])
-  @Column({ type: "enum", enum: [Tag], default: [] })
+  @Field(() => [Tag], { nullable: true })
+  @Column({ type: "enum", enum: [Tag], nullable: true })
   tag: Tag[];
 
   @OneToMany(() => PersonalScore, (personal_score) => personal_score.book)
@@ -65,7 +65,7 @@ export class Book extends BaseEntity {
   @Field()
   read: boolean;
 
-  @Field((_) => BookPosition)
+  @Field(() => BookPosition)
   @OneToOne(() => BookPosition)
   @JoinColumn()
   position: BookPosition;

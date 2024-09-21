@@ -55,7 +55,7 @@ export class User extends BaseEntity {
 
   @Field(() => [Library])
   @OneToMany(() => Library, (library) => library.user)
-  library: Library;
+  libraries: Library[];
 
   @Field(() => [Book])
   @OneToMany(() => Book, (book) => book.user)

@@ -37,6 +37,6 @@ export class Library extends BaseEntity {
   @Column()
   name!: string;
 
-  @ManyToOne(() => User, (user) => user.library)
+  @ManyToOne(() => User, (user) => user.libraries)
   user: User;
 }
